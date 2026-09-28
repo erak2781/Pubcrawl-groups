@@ -42,11 +42,8 @@ def format_dict(name_dict: dict) -> list:
             if [name_1, x] in new_list:
                 continue
             else:
-                print(f'pair {x}')
-                print(name_1)
                 new_list.append([x, name_1])
         else: 
-            print(f'single {x}')
             new_list.append([x])
 
     new_list.sort(key=len, reverse=True)
@@ -56,7 +53,6 @@ def format_dict(name_dict: dict) -> list:
         split += 1
     pair_list = new_list[0: split]
     single_list = new_list[split:]
-    print(f'Pair list: {pair_list}\n Single list: {single_list}')
     return pair_list, single_list
 
 # def check_pair(name_dict: dict, name: String) -> bool:
@@ -101,8 +97,7 @@ def create_groups(num_groups, csv_text, name_col, partner_col, has_header, delim
                 chosen = random.randint(0, len(singel_list) - 1)
                 res_list[x].append(singel_list[chosen][0])
                 del singel_list[chosen]
-    print(res_list)
-    print(singel_list)
+    
     return res_list
 
 
