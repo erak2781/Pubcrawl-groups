@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group generator</title>
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#14213d;--muted:#5d6b82;--line:#d3dbe4;--accent:#2b50e8;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1622;--panel:#18212f;--ink:#e8edf5;--muted:#93a1b8;--line:#2b384c;--accent:#6f8cff;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2{font-family:Georgia,"Iowan Old Style",serif;font-weight:700;margin:0}
+main{max-width:1100px;margin:0 auto;padding:32px 20px;display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start}
+@media (max-width:820px){main{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;display:grid;gap:18px}
+h1{font-size:2rem;line-height:1.1}
+.sub{color:var(--muted);margin:6px 0 0;font-size:.95rem}
+#drop{border:2px dashed var(--line);border-radius:8px;padding:28px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+#drop:hover,#drop:focus-visible,#drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);outline:none}
+#drop strong{display:block}
+#drop small{color:var(--muted)}
+#drop.has{border-style:solid;border-color:var(--accent)}
+label{font-weight:600;display:block;margin-bottom:6px}
+input[type=number],input[type=text]{width:100%;padding:10px 12px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stepper{display:flex;gap:8px}
+.stepper button{width:44px;font-size:1.3rem}
+button{font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 14px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;padding:12px}
+button:disabled{opacity:.5;cursor:not-allowed}
+#mapping{display:grid;gap:12px}
+select{width:100%;padding:10px 12px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label small{font-weight:400;color:var(--muted)}
+label.check{display:flex;gap:8px;align-items:center;font-weight:400;margin:0}
+.field label{margin-bottom:4px}
+.preview{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+#preview{border-collapse:collapse;width:100%;font-size:.85rem}
+#preview th,#preview td{padding:5px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line);max-width:140px;overflow:hidden;text-overflow:ellipsis}
+#preview th{font-weight:600;background:var(--bg)}
+#preview .selName{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+#preview .selPartner{background:color-mix(in srgb,#1f9d6b 20%,transparent)}
+details summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+details input{margin-top:8px}
+#msg{color:var(--err);min-height:1.4em;font-size:.95rem;margin:0}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.head h2{font-size:1.4rem}
+.actions{display:flex;gap:8px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-top:6px solid var(--c);border-radius:8px;padding:14px 16px}
+.card h3{margin:0 0 8px;font-family:Georgia,serif;font-size:1.1rem;display:flex;justify-content:space-between;align-items:baseline}
+.card h3 span{font:.85rem system-ui,sans-serif;color:var(--muted)}
+.card ul{margin:0;padding:0;list-style:none}
+.card li{padding:5px 0;border-top:1px solid var(--line);text-transform:capitalize}
+.card li:first-child{border-top:0}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:48px 24px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <section class="panel" aria-label="Settings">
+    <div>
+      <h1>Group generator</h1>
+      <p class="sub">Upload your list, choose the columns to read, and mutual pairs stay together.</p>
+    </div>
+
+    <div id="drop" tabindex="0" role="button" aria-label="Choose CSV file">
+      <strong id="dropTitle">Drop a CSV file here</strong>
+      <small id="dropSub">or click to browse</small>
+      <input id="file" type="file" accept=".csv,text/csv" hidden>
+    </div>
+
+    <div id="mapping" hidden>
+      <label class="check"><input type="checkbox" id="hasHeader" checked> First row is a header</label>
+      <div class="field">
+        <label for="nameCol">Name column</label>
+        <select id="nameCol"></select>
+      </div>
+      <div class="field">
+        <label for="partnerCol">Partner column <small>(optional)</small></label>
+        <select id="partnerCol"></select>
+      </div>
+      <div class="preview"><table id="preview"></table></div>
+    </div>
+
+    <div>
+      <label for="n">Number of groups</label>
+      <div class="stepper">
+        <button type="button" id="minus" aria-label="Fewer groups">−</button>
+        <input id="n" type="number" min="1" value="3">
+        <button type="button" id="plus" aria-label="More groups">+</button>
+      </div>
+    </div>
+
+    <button class="primary" id="go" disabled>Generate groups</button>
+    <p id="msg" role="alert"></p>
+
+    <details>
+      <summary>Backend address</summary>
+      <input id="api" type="text" value="http://localhost:5000" aria-label="Backend address">
+    </details>
+  </section>
+
+  <section aria-live="polite">
+    <div id="results"><div class="empty">Your groups will show up here.</div></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const colors = ['#2b50e8','#e0611f','#1f9d6b','#c02f8f','#8a5cf6','#d1a100','#0f9cc0','#d6373b'];
+let file = null, groups = [], rows = [], delimiter = ',';
+
+function detectDelimiter(text){
+  const first = text.split(/\r?\n/)[0] || '';
+  const counts = [',',';','\t'].map(d => [d, first.split(d).length - 1]);
+  return counts.sort((a,b) => b[1]-a[1])[0][1] > 0 ? counts[0][0] : ',';
+}
+
+function parseCSV(text, d){
+  const out = []; let row = [], cur = '', q = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(q){
+      if(ch === '"' && text[i+1] === '"'){ cur += '"'; i++; }
+      else if(ch === '"') q = false;
+      else cur += ch;
+    } else if(ch === '"') q = true;
+    else if(ch === d){ row.push(cur); cur = ''; }
+    else if(ch === '\n' || ch === '\r'){
+      if(ch === '\r' && text[i+1] === '\n') i++;
+      row.push(cur); out.push(row); row = []; cur = '';
+    } else cur += ch;
+  }
+  if(cur !== '' || row.length){ row.push(cur); out.push(row); }
+  return out.filter(r => r.some(c => c.trim() !== ''));
+}
+
+async function setFile(f){
+  if(!f) return;
+  if(!/\.csv$/i.test(f.name) && f.type !== 'text/csv'){ $('msg').textContent = 'That is not a CSV file. Choose a .csv file.'; return; }
+  const text = (await f.text()).replace(/^\uFEFF/, '');
+  delimiter = detectDelimiter(text);
+  rows = parseCSV(text, delimiter);
+  if(!rows.length){ $('msg').textContent = 'That file is empty.'; return; }
+  file = f; $('msg').textContent = '';
+  $('drop').classList.add('has');
+  $('dropTitle').textContent = f.name;
+  $('dropSub').textContent = 'Click or drop to replace';
+  $('go').disabled = false;
+  $('mapping').hidden = false;
+  buildSelects(true);
+}
+
+function colLabels(){
+  const width = Math.max(...rows.map(r => r.length));
+  return Array.from({length: width}, (_, i) =>
+    $('hasHeader').checked && rows[0][i] && rows[0][i].trim() ? rows[0][i].trim() : 'Column ' + (i+1));
+}
+
+function buildSelects(guess){
+  const labels = colLabels();
+  const prevName = $('nameCol').value, prevPartner = $('partnerCol').value;
+  $('nameCol').innerHTML = labels.map((l,i) => `<option value="${i}"></option>`).join('');
+  $('partnerCol').innerHTML = '<option value="">None</option>' + labels.map((l,i) => `<option value="${i}"></option>`).join('');
+  [...$('nameCol').options].forEach((o,i) => o.textContent = labels[i]);
+  [...$('partnerCol').options].slice(1).forEach((o,i) => o.textContent = labels[i]);
+  if(guess){
+    const p = labels.findIndex(l => /partner|pair|friend|with|kompis|vän|par\b/i.test(l));
+    const n = labels.findIndex(l => /name|namn/i.test(l));
+    $('nameCol').value = n >= 0 ? n : 0;
+    $('partnerCol').value = p >= 0 && p !== +$('nameCol').value ? p : '';
+  } else { $('nameCol').value = prevName; $('partnerCol').value = prevPartner; }
+  renderPreview();
+}
+
+function renderPreview(){
+  const labels = colLabels(), nc = $('nameCol').value, pc = $('partnerCol').value;
+  const body = rows.slice($('hasHeader').checked ? 1 : 0, ($('hasHeader').checked ? 1 : 0) + 4);
+  const cls = i => String(i) === nc ? 'selName' : String(i) === pc ? 'selPartner' : '';
+  const esc = s => (s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  $('preview').innerHTML = '<tr>' + labels.map((l,i) => `<th class="${cls(i)}">${esc(l)}</th>`).join('') + '</tr>' +
+    body.map(r => '<tr>' + labels.map((_,i) => `<td class="${cls(i)}">${esc(r[i])}</td>`).join('') + '</tr>').join('');
+}
+
+$('hasHeader').onchange = () => buildSelects(false);
+$('nameCol').onchange = $('partnerCol').onchange = renderPreview;
+
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.onkeydown = e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); $('file').click(); } };
+$('file').onchange = e => setFile(e.target.files[0]);
+['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => setFile(e.dataTransfer.files[0]));
+// stop the browser opening a file dropped outside the zone
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+$('minus').onclick = () => $('n').value = Math.max(1, (+$('n').value || 1) - 1);
+$('plus').onclick = () => $('n').value = (+$('n').value || 0) + 1;
+
+async function generate(){
+  const n = parseInt($('n').value, 10);
+  if(!file){ $('msg').textContent = 'Choose a CSV file first.'; return; }
+  if(!n || n < 1){ $('msg').textContent = 'Enter at least 1 group.'; return; }
+  if($('nameCol').value === $('partnerCol').value){ $('msg').textContent = 'Name and partner must be different columns.'; return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('num_groups', n);
+  fd.append('name_col', $('nameCol').value);          // 0-based index
+  fd.append('partner_col', $('partnerCol').value);    // '' = no partners
+  fd.append('has_header', $('hasHeader').checked);    // 'true' / 'false'
+  fd.append('delimiter', delimiter);                  // ',' ';' or tab
+  $('go').disabled = true; $('go').textContent = 'Generating…'; $('msg').textContent = '';
+  try{
+    const res = await fetch($('api').value.replace(/\/$/,'') + '/api/generate-groups', {method:'POST', body:fd});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Server error ' + res.status);
+    groups = data.groups; render();
+  }catch(err){
+    $('msg').textContent = err instanceof TypeError
+      ? 'Could not reach the backend. Check that main.py is running at ' + $('api').value + '.'
+      : 'Backend error: ' + err.message;
+  }finally{
+    $('go').disabled = false; $('go').textContent = 'Generate groups';
+  }
+}
+$('go').onclick = generate;
+
+function render(){
+  const total = groups.reduce((s,g) => s + g.length, 0);
+  const box = $('results');
+  box.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'head';
+  head.innerHTML = `<h2>${groups.length} groups, ${total} people</h2>
+    <div class="actions"><button id="again">Shuffle again</button><button id="copy">Copy as text</button></div>`;
+  const grid = document.createElement('div'); grid.id = 'grid';
+  groups.forEach((g,i) => {
+    const c = document.createElement('div'); c.className = 'card';
+    c.style.setProperty('--c', colors[i % colors.length]);
+    const h = document.createElement('h3');
+    h.innerHTML = `<b>Group ${i+1}</b>`;
+    const s = document.createElement('span'); s.textContent = g.length + ' people'; h.appendChild(s);
+    const ul = document.createElement('ul');
+    g.forEach(name => { const li = document.createElement('li'); li.textContent = name; ul.appendChild(li); });
+    c.append(h, ul); grid.appendChild(c);
+  });
+  box.append(head, grid);
+  $('again').onclick = generate;
+  $('copy').onclick = async e => {
+    const text = groups.map((g,i) => `Group ${i+1}\n` + g.map(n => '  ' + n).join('\n')).join('\n\n');
+    try{ await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; }
+    catch{ e.target.textContent = 'Copy failed'; }
+    setTimeout(() => e.target.textContent = 'Copy as text', 1500);
+  };
+}
+</script>
+</body>
+</html>
