@@ -1,4 +1,7 @@
-Flask
+flask
 flask-cors
-gunicorn
+openrouteservice
+pandas
 numpy
+python-dotenv
+gunicorn
