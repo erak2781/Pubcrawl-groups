@@ -3,6 +3,6 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Pubcrawl-groups/'
+  base: '/Pubcrawl-groups/',
   plugins: [react()],
 })
