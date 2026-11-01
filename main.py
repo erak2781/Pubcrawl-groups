@@ -16,7 +16,7 @@ load_dotenv()
 
 API_KEY = os.environ.get('ORS_API_KEY')
 
-print(API_KEY)
+
 
 uppsala_nations_coordinates = {
     "Stockholms Nation": [0, (59.856688632129746, 17.634177066153125)],
