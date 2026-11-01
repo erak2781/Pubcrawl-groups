@@ -136,11 +136,11 @@ def get_ors_walking_distances(pubs: list):
     )
     dist_dict = {k: distances_m[v] for v, k in enumerate(pubs)}
     index_translate = {k: v for v, k in enumerate(pubs)}
-    print("Distances:")
-    print(df_dist , '\n')
+    # print("Distances:")
+    # print(df_dist , '\n')
 
-    print("Time:")
-    print(df_sec)
+    # print("Time:")
+    # print(df_sec)
 
     print(f'\n{dist_dict}')
     return dist_dict, index_translate
